@@ -34,8 +34,9 @@ python run_model.py <자료 경로.csv 또는 .pkl>
 | 단계 | 식 | 코드 위치 | 논문 위치 |
 |---|---|---|---|
 | 관측 | $N_t \mid \theta_t \sim \text{Poisson}(\theta_t Z_t)$ | — | 3.1.2 |
-| 참조 곡선 | 상품 계층 5단계마다 해당 방송 이전 날짜의 최근 30회 방송의 분당 평균(주말·시간대가 같은 방송 우선), 다섯 계층의 평균 | `run_model.py` 2단계 | 3.2.1 |
-| 방송 전 예상 배율 | $\hat\mu$: 같은 카테고리 과거 방송의 실제 배율 $Y/\sum Z$ 의 최근 30회 중앙값 <br> $\mu^* = \exp(c_\ell + b_\ell \log\hat\mu)$: 학습 구간에서 계층별로 적합한 축소 회귀 | 3단계 | 3.2.2 |
+| 참조 곡선 | 상품 카테고리 단계(LV1~LV5)마다 카테고리와 편성 시간대(주말 여부·시작 시간구분)가 같은 과거 방송 최근 30회의 분당 평균. 그런 방송이 5회 미만이면 카테고리만 같은 방송을 쓰고, 그래도 5회 미만인 단계는 제외. 단계별 곡선(최대 5개)을 같은 가중치로 평균 | `run_model.py` 2단계 | 3.2.1 |
+| 방송 전 예상 배율 | $\hat\mu$: 과거 방송의 실제 배율 $Y/\sum Z$ 의 최근 30회 중앙값. LV1부터 넓혀 가며 과거 방송이 3회 이상인 첫 단계를 쓰고, 없으면 1. 범위 [0.15, 4.0] <br> $\mu^* = \exp(c_\ell + b_\ell \log\hat\mu)$: 학습 구간에서 단계별로 적합한 축소 회귀. 학습 표본이 200건 미만인 단계($\hat\mu = 1$ 로 둔 방송 묶음 포함)는 전체 방송의 적합식 | 3단계 | 3.2.2 |
+| 초기 사전분포 | $\alpha_0 = \mu^*$, $\beta_0 = 1$ (사전 평균 $\mu^*$) | `run_and_forecast()` | 3.3.1 |
 | 매 분 갱신 | $\alpha_t = \gamma\alpha_{t-1} + \mu^* b_0 + N_t$ <br> $\beta_t = \gamma\beta_{t-1} + b_0 + Z_t$, $\quad\hat\theta_t = \alpha_t/\beta_t$ | `run_and_forecast()` | 3.3.1 |
 | $k$ 분 앞 배율 | $w_k\hat\theta_t + (1-w_k)\mu^*$, $\quad w_k = \dfrac{\gamma^k\beta_t}{\gamma^k\beta_t + b_0(1-\gamma^k)/(1-\gamma)}$ | `run_and_forecast()` | 3.3.2 |
 | 남은 주문 | $\hat R(t) = \mu^*\sum_{s>t} Z_s + (\hat\theta_t - \mu^*)\sum_{k} w_k Z_{t+k}$ | `run_and_forecast()` | 3.3.2 |
